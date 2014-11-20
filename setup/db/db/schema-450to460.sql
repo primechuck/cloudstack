@@ -20,3 +20,5 @@
 --
 
 INSERT IGNORE INTO `cloud`.`configuration` VALUES ("Advanced", 'DEFAULT', 'management-server', "stats.output.uri", "", "URI to additionally send StatsCollector statistics to", "", NULL, NULL, 0);
+
+INSERT IGNORE INTO `cloud`.`configuration` VALUES ("Advanced", 'DEFAULT', 'management-server', "usage.report.interval", 7, "Interval (days) between sending anonymous Usage Reports back to the CloudStack project", "", NULL, NULL, 0);
