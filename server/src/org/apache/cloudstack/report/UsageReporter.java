@@ -64,7 +64,7 @@ import com.cloud.utils.component.ComponentMethodInterceptable;
 import com.cloud.utils.concurrency.NamedThreadFactory;
 import com.cloud.utils.db.DB;
 import com.cloud.utils.db.TransactionLegacy;
-
+import com.cloud.upgrade.dao.VersionDao;
 import com.google.gson.Gson;
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -95,6 +95,8 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
     private UserVmDao _userVmDao;
     @Inject
     private VMInstanceDao _vmInstance;
+    @Inject
+    private VersionDao _versionDao;
 
     int usageReportInterval = -1;
 
@@ -129,7 +131,7 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
         uniqueID = getUniqueId();
     }
 
-    private void sendReport(String reportUri, String uniqueID, Map<String, Map> reportMap) {
+    private void sendReport(String reportUri, String uniqueID, Map<String, Object> reportMap) {
         Gson gson = new Gson();
         String report = gson.toJson(reportMap);
 
@@ -379,19 +381,24 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
         return instanceMap;
     }
 
+    private String getCurrentVersion() {
+        return _versionDao.getCurrentVersion();
+    }
+
     class UsageCollector extends ManagedContextRunnable {
         @Override
         protected void runInContext() {
             try {
                 s_logger.warn("UsageReporter is running...");
 
-                Map<String, Map> reportMap = new HashMap<String, Map>();
+                Map<String, Object> reportMap = new HashMap<String, Object>();
 
                 reportMap.put("hosts", getHostReport());
                 reportMap.put("clusters", getClusterReport());
                 reportMap.put("primaryStorage", getStoragePoolReport());
                 reportMap.put("zones", getDataCenterReport());
                 reportMap.put("instances", getInstanceReport());
+                reportMap.put("current_version", getCurrentVersion());
 
                 sendReport(reportHost, uniqueID, reportMap);
 
