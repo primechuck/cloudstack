@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -65,6 +67,7 @@ import com.cloud.utils.concurrency.NamedThreadFactory;
 import com.cloud.utils.db.DB;
 import com.cloud.utils.db.TransactionLegacy;
 import com.cloud.upgrade.dao.VersionDao;
+import com.cloud.upgrade.dao.VersionVO;
 import com.google.gson.Gson;
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -381,6 +384,19 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
         return instanceMap;
     }
 
+    private Map<String, String> getVersionReport() {
+        Map<String, String> versionMap = new HashMap<String, String>();
+
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+        List<VersionVO> versions = _versionDao.getAllVersions();
+        for (VersionVO version : versions) {
+            versionMap.put(version.getVersion(), dateFormat.format(version.getUpdated()));
+        }
+
+        return versionMap;
+    }
+
     private String getCurrentVersion() {
         return _versionDao.getCurrentVersion();
     }
@@ -398,6 +414,7 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
                 reportMap.put("primaryStorage", getStoragePoolReport());
                 reportMap.put("zones", getDataCenterReport());
                 reportMap.put("instances", getInstanceReport());
+                reportMap.put("versions", getVersionReport());
                 reportMap.put("current_version", getCurrentVersion());
 
                 sendReport(reportHost, uniqueID, reportMap);
