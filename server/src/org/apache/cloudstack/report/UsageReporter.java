@@ -361,7 +361,7 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
         SearchCriteria<HostVO> host_sc = _hostDao.createSearchCriteria();
         List<HostVO> hosts = _hostDao.search(host_sc, null);
         for (HostVO host : hosts) {
-            List<UserVmVO> vms = _userVmDao.listUpByHostId(host.getId());
+            List<UserVmVO> vms = _userVmDao.listByLastHostId(host.getId());
             for (UserVmVO vm : vms) {
                 VMInstanceVO vmVO = _vmInstance.findById(vm.getId());
 
