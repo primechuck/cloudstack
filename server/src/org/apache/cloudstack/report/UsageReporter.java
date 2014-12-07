@@ -69,6 +69,7 @@ import com.cloud.utils.db.TransactionLegacy;
 import com.cloud.upgrade.dao.VersionDao;
 import com.cloud.upgrade.dao.VersionVO;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 @Component
@@ -135,7 +136,13 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
     }
 
     private void sendReport(String reportUri, String uniqueID, Map<String, Object> reportMap) {
-        Gson gson = new Gson();
+
+        GsonBuilder builder = new GsonBuilder();
+
+        AtomicGsonAdapter adapter = new AtomicGsonAdapter();
+        builder.registerTypeAdapter(AtomicLongMap.class, adapter);
+
+        Gson gson = builder.create();
         String report = gson.toJson(reportMap);
 
         int http_timeout = 15000;
