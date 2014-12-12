@@ -19,6 +19,7 @@ package org.apache.cloudstack.report;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -68,6 +69,8 @@ import com.cloud.utils.db.DB;
 import com.cloud.utils.db.TransactionLegacy;
 import com.cloud.upgrade.dao.VersionDao;
 import com.cloud.upgrade.dao.VersionVO;
+import com.cloud.storage.dao.DiskOfferingDao;
+import com.cloud.storage.DiskOfferingVO;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.common.util.concurrent.AtomicLongMap;
@@ -101,6 +104,8 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
     private VMInstanceDao _vmInstance;
     @Inject
     private VersionDao _versionDao;
+    @Inject
+    private DiskOfferingDao _diskOfferingDao;
 
     int usageReportInterval = -1;
 
@@ -391,6 +396,36 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
         return instanceMap;
     }
 
+    private Map<String, Object> getDiskOfferingReport() {
+        Map<String, Object> diskOfferingReport = new HashMap<String, Object>();
+
+        AtomicLongMap<Object> system_use = AtomicLongMap.create();
+        AtomicLongMap<Object> provisioning_type = AtomicLongMap.create();
+        AtomicLongMap<Object> use_local_storage = AtomicLongMap.create();
+
+        List<DiskOfferingVO> private_offerings = _diskOfferingDao.findPrivateDiskOffering();
+        List<DiskOfferingVO> public_offerings = _diskOfferingDao.findPublicDiskOfferings();
+
+        List<DiskOfferingVO> offerings = new ArrayList<DiskOfferingVO>();
+        offerings.addAll(private_offerings);
+        offerings.addAll(public_offerings);
+
+        long disk_size = 0;
+        for (DiskOfferingVO offering : offerings) {
+            provisioning_type.getAndIncrement(offering.getProvisioningType());
+            system_use.getAndIncrement(offering.getSystemUse());
+            use_local_storage.getAndIncrement(offering.getUseLocalStorage());
+            disk_size += offering.getDiskSize();
+        }
+
+        diskOfferingReport.put("system_use", system_use);
+        diskOfferingReport.put("provisioning_type", provisioning_type);
+        diskOfferingReport.put("use_local_storage", use_local_storage);
+        diskOfferingReport.put("avg_disk_size", disk_size / offerings.size());
+
+        return diskOfferingReport;
+    }
+
     private Map<String, String> getVersionReport() {
         Map<String, String> versionMap = new HashMap<String, String>();
 
@@ -421,6 +456,7 @@ public class UsageReporter extends ManagerBase implements ComponentMethodInterce
                 reportMap.put("primaryStorage", getStoragePoolReport());
                 reportMap.put("zones", getDataCenterReport());
                 reportMap.put("instances", getInstanceReport());
+                reportMap.put("diskOffering", getDiskOfferingReport());
                 reportMap.put("versions", getVersionReport());
                 reportMap.put("current_version", getCurrentVersion());
 
